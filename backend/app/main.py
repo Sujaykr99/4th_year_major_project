@@ -1,44 +1,38 @@
-"""Main FastAPI application entry point."""
-from contextlib import asynccontextmanager
+"""Main FastAPI application."""
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from contextlib import asynccontextmanager
+from datetime import datetime
 
+from app.core.database import connect_to_mongo, close_mongo_connection
 from app.core.config import settings
-from app.core.database import connect_to_mongo, close_mongo_connection, get_database
-from app.core.security import get_current_user_id
 from app.ml.service import ml_service
-
-# Import routers
-from app.api import auth, profile, predict, roadmap
+from app.api.v1.endpoints import auth, profile, prediction, roadmap
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup
-    print("Starting Career Matrix API...")
     await connect_to_mongo()
-
     # Load ML model
-    ml_service.load_artifacts()
-
+    if not ml_service.load():
+        print("Warning: ML model failed to load. Predictions will not be available.")
     yield
-
     # Shutdown
-    print("Shutting down Career Matrix API...")
     await close_mongo_connection()
 
 
 app = FastAPI(
     title=settings.APP_NAME,
     version=settings.APP_VERSION,
-    description="AI-Powered Career Prediction & Guidance System",
+    description="Career Matrix API - AI-powered career prediction and guidance system",
+    openapi_url=f"{settings.API_V1_PREFIX}/openapi.json",
+    docs_url=f"{settings.API_V1_PREFIX}/docs",
+    redoc_url=f"{settings.API_V1_PREFIX}/redoc",
     lifespan=lifespan,
-    docs_url="/docs",
-    redoc_url="/redoc"
 )
 
-# CORS
+# Set up CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.CORS_ORIGINS,
@@ -48,51 +42,25 @@ app.add_middleware(
 )
 
 # Include routers
-app.include_router(auth.router)
-app.include_router(profile.router)
-app.include_router(predict.router)
-app.include_router(roadmap.router)
+app.include_router(auth.router, prefix=f"{settings.API_V1_PREFIX}/auth", tags=["auth"])
+app.include_router(profile.router, prefix=f"{settings.API_V1_PREFIX}/profile", tags=["profile"])
+app.include_router(prediction.router, prefix=f"{settings.API_V1_PREFIX}/predict", tags=["prediction"])
+app.include_router(roadmap.router, prefix=f"{settings.API_V1_PREFIX}/roadmap", tags=["roadmap"])
 
 
-@app.get("/")
+@app.get("/", tags=["root"])
 async def root():
     return {
-        "name": settings.APP_NAME,
+        "message": "Welcome to Career Matrix API",
         "version": settings.APP_VERSION,
-        "status": "running",
-        "docs": "/docs"
+        "docs": f"{settings.API_V1_PREFIX}/docs",
     }
 
 
-@app.get("/health")
+@app.get("/health", tags=["health"])
 async def health_check():
-    """Health check endpoint."""
-    db = get_database()
-    try:
-        # Ping database
-        await db.command("ping")
-        db_status = "connected"
-    except Exception:
-        db_status = "disconnected"
-
     return {
         "status": "healthy",
-        "database": db_status,
-        "ml_model": "loaded" if ml_service.is_loaded else "not loaded"
+        "version": settings.APP_VERSION,
+        "model_loaded": ml_service.is_loaded,
     }
-
-
-@app.get("/api/v1/model/info")
-async def model_info():
-    """Get ML model information."""
-    return ml_service.get_model_info()
-
-
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(
-        "app.main:app",
-        host=settings.HOST,
-        port=settings.PORT,
-        reload=settings.DEBUG
-    )
