@@ -5,7 +5,7 @@ import pandas as pd
 import numpy as np
 from pathlib import Path
 from typing import Tuple, List, Dict, Any, Optional
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import train_test_split, cross_val_score, StratifiedKFold
 from sklearn.preprocessing import StandardScaler, LabelEncoder, MultiLabelBinarizer
 from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline

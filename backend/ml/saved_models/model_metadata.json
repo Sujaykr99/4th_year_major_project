@@ -1,0 +1,85 @@
+{
+  "model_version": "1.0.0",
+  "model_type": "SVC",
+  "training_date": "2026-08-01",
+  "dataset": {
+    "source": "career_dataset_large.csv",
+    "rows": 5000,
+    "columns": 6,
+    "target_column": "Recommended Career",
+    "description": "Kaggle Career Recommendation Dataset (mkechinov/career-recommendation-dataset)"
+  },
+  "preprocessing": {
+    "cgpa_normalization": "Converted to percentage scale (0-100)",
+    "skills_binarization": "MultiLabelBinarizer on comma-separated skills",
+    "categorical_encoding": "LabelEncoder for education_level and specialization",
+    "feature_scaling": "StandardScaler on numeric features",
+    "duplicates_removed": 1,
+    "missing_values_filled": "CGPA filled with median"
+  },
+  "features": [
+    "education_level",
+    "specialization",
+    "cgpa",
+    "skill_Accounting",
+    "skill_Communication",
+    "skill_Counseling",
+    "skill_Data_Analysis",
+    "skill_Financial_Analysis",
+    "skill_MS_Office",
+    "skill_Machine_Learning",
+    "skill_Marketing",
+    "skill_Python",
+    "skill_SQL",
+    "certifications_count"
+  ],
+  "classes": [
+    "Business Analyst",
+    "Clerk",
+    "Data Entry Operator",
+    "Financial Analyst",
+    "Junior Accountant",
+    "ML Engineer",
+    "Marketing Executive",
+    "Professor",
+    "Research Scientist",
+    "Sales Assistant",
+    "School Counselor",
+    "Software Engineer"
+  ],
+  "model_comparison": {
+    "RandomForest": {
+      "accuracy": 0.0850,
+      "f1_score": 0.0854,
+      "precision": 0.0854,
+      "recall": 0.0850
+    },
+    "XGBoost": {
+      "accuracy": 0.0940,
+      "f1_score": 0.0933,
+      "precision": 0.0933,
+      "recall": 0.0940
+    },
+    "SVM": {
+      "accuracy": 0.0990,
+      "f1_score": 0.0975,
+      "precision": 0.0975,
+      "recall": 0.0990
+    }
+  },
+  "best_model": {
+    "name": "SVM",
+    "f1_score": 0.0975,
+    "accuracy": 0.0990
+  },
+  "notes": [
+    "Low F1 scores indicate limited predictive power with current features",
+    "Dataset has 12 career classes with imbalanced distribution",
+    "Consider adding more features or using placement dataset for readiness scoring"
+  ],
+  "reproduction": {
+    "command": "python -m app.ml.train --data data/career_dataset_large.csv --output ml/saved_models",
+    "requirements": "backend/requirements.txt",
+    "python_version": "3.14"
+  }
+}

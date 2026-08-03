@@ -12,6 +12,161 @@ from app.core.config import settings
 from app.ml.pipeline import CareerDataProcessor, SHAPExplainer, CAREER_ROLES
 
 
+# Mapping from frontend skill categories to model skill features
+SKILL_CATEGORY_MAPPING = {
+    "programming_skills": {
+        "Python": "skill_Python",
+        "Java": "skill_Java",
+        "C++": "skill_C++",
+        "JavaScript": "skill_JavaScript",
+        "TypeScript": "skill_TypeScript",
+        "C#": "skill_C#",
+        "Go": "skill_Go",
+        "Rust": "skill_Rust",
+        "SQL": "skill_SQL",
+        "R": "skill_R",
+    },
+    "framework_skills": {
+        "React": "skill_React",
+        "Django": "skill_Django",
+        "FastAPI": "skill_FastAPI",
+        "Spring": "skill_Spring",
+        "Node.js": "skill_Node.js",
+        "Express": "skill_Express",
+        "TensorFlow": "skill_TensorFlow",
+        "PyTorch": "skill_PyTorch",
+        "scikit-learn": "skill_scikit-learn",
+        "Pandas": "skill_Pandas",
+        "NumPy": "skill_NumPy",
+    },
+    "tool_skills": {
+        "Git": "skill_Git",
+        "Docker": "skill_Docker",
+        "Kubernetes": "skill_Kubernetes",
+        "AWS": "skill_AWS",
+        "Azure": "skill_Azure",
+        "GCP": "skill_GCP",
+        "Linux": "skill_Linux",
+        "VS Code": "skill_VS_Code",
+        "Jupyter": "skill_Jupyter",
+        "Tableau": "skill_Tableau",
+        "Power BI": "skill_Power_BI",
+        "Excel": "skill_Excel",
+        "MS Office": "skill_MS_Office",
+    },
+    "soft_skills": {
+        "Communication": "skill_Communication",
+        "Leadership": "skill_Leadership",
+        "Teamwork": "skill_Teamwork",
+        "Problem Solving": "skill_Problem_Solving",
+        "Critical Thinking": "skill_Critical_Thinking",
+        "Adaptability": "skill_Adaptability",
+        "Time Management": "skill_Time_Management",
+        "Creativity": "skill_Creativity",
+    }
+}
+
+# Model's expected skill features (from training)
+MODEL_SKILL_FEATURES = [
+    "skill_Accounting",
+    "skill_Communication",
+    "skill_Counseling",
+    "skill_Data_Analysis",
+    "skill_Financial_Analysis",
+    "skill_MS_Office",
+    "skill_Machine_Learning",
+    "skill_Marketing",
+    "skill_Python",
+    "skill_SQL",
+]
+
+
+def map_frontend_to_model_features(input_data: Dict[str, Any], feature_names: List[str]) -> Dict[str, Any]:
+    """
+    Map frontend PredictionInput schema to model's expected features.
+
+    Frontend sends: programming_skills, framework_skills, tool_skills, soft_skills (lists)
+    Model expects: skill_Python, skill_SQL, skill_Machine_Learning, etc. (binary flags)
+    """
+    model_input = {}
+
+    # Map education level
+    if "current_education" in input_data and input_data["current_education"]:
+        edu = input_data["current_education"]
+        if isinstance(edu, dict):
+            model_input["education_level"] = edu.get("degree", "Bachelor")
+        else:
+            model_input["education_level"] = str(edu)
+    elif "education_level" in input_data:
+        model_input["education_level"] = input_data["education_level"]
+    else:
+        model_input["education_level"] = "Bachelor"
+
+    # Map specialization/branch
+    if "current_education" in input_data and input_data["current_education"]:
+        edu = input_data["current_education"]
+        if isinstance(edu, dict):
+            model_input["specialization"] = edu.get("field_of_study", "Computer Science")
+        else:
+            model_input["specialization"] = "Computer Science"
+    elif "specialization" in input_data:
+        model_input["specialization"] = input_data["specialization"]
+    else:
+        model_input["specialization"] = "Computer Science"
+
+    # Map CGPA - frontend uses 0-10 scale, model expects percentage
+    cgpa = input_data.get("cgpa", 0)
+    if cgpa > 0:
+        if cgpa <= 10:
+            model_input["cgpa"] = cgpa * 10  # Convert to percentage
+        else:
+            model_input["cgpa"] = cgpa
+    else:
+        model_input["cgpa"] = 0
+
+    # Initialize all skill features to 0
+    for feat in MODEL_SKILL_FEATURES:
+        model_input[feat] = 0
+
+    # Map skills from frontend categories
+    all_skills = []
+    for cat in ["programming_skills", "framework_skills", "tool_skills", "soft_skills"]:
+        skills = input_data.get(cat, [])
+        if isinstance(skills, list):
+            all_skills.extend(skills)
+
+    # Match skills to model features (case-insensitive, fuzzy matching)
+    for skill in all_skills:
+        skill_clean = skill.strip()
+        # Direct mapping
+        for cat, mapping in SKILL_CATEGORY_MAPPING.items():
+            for frontend_skill, model_feat in mapping.items():
+                if frontend_skill.lower() == skill_clean.lower():
+                    if model_feat in MODEL_SKILL_FEATURES:
+                        model_input[model_feat] = 1
+
+    # Also check for partial matches in model features
+    for skill in all_skills:
+        skill_lower = skill.strip().lower()
+        for model_feat in MODEL_SKILL_FEATURES:
+            feat_skill = model_feat.replace("skill_", "").replace("_", " ").lower()
+            if skill_lower in feat_skill or feat_skill in skill_lower:
+                model_input[model_feat] = 1
+
+    # Certifications count
+    model_input["certifications_count"] = input_data.get("certifications_count", 0)
+
+    # Ensure all expected features are present
+    for feat in feature_names:
+        if feat not in model_input:
+            if feat.startswith("skill_") or feat in ["cgpa", "certifications_count"]:
+                model_input[feat] = 0
+            else:
+                model_input[feat] = "unknown"
+
+    return model_input
+
+
 class MLModelService:
     """Service for loading ML artifacts and making predictions."""
 
@@ -80,14 +235,23 @@ class MLModelService:
         if not self.is_loaded:
             raise RuntimeError("Model not loaded. Call load_artifacts() first.")
 
+        # Map frontend schema to model features
+        model_input = map_frontend_to_model_features(input_data, self.feature_names)
+
         # Transform input
-        X = self.processor.transform_input(input_data)
+        X = self.processor.transform_input(model_input)
 
         # Predict
-        pred_class = self.model.predict(X)[0]
+        pred_class_encoded = self.model.predict(X)[0]
         pred_proba = self.model.predict_proba(X)[0] if hasattr(self.model, "predict_proba") else None
 
-        # Get class probabilities
+        # Decode predicted class using target encoder
+        if self.target_encoder is not None:
+            pred_class = self.target_encoder.inverse_transform([pred_class_encoded])[0]
+        else:
+            pred_class = str(pred_class_encoded)
+
+        # Get class probabilities - map to decoded labels
         if pred_proba is not None:
             class_probs = dict(zip(self.classes_, pred_proba.tolist()))
             confidence = float(max(pred_proba))
@@ -103,7 +267,7 @@ class MLModelService:
         else:
             confidence_level = "low"
 
-        # Top 3 predictions
+        # Top 3 predictions - use decoded labels
         top_predictions = sorted(class_probs.items(), key=lambda x: x[1], reverse=True)[:3]
         top_predictions_list = [
             {"role": role, "probability": prob, "confidence_level": "high" if prob >= 0.8 else "medium" if prob >= 0.5 else "low"}
@@ -123,8 +287,11 @@ class MLModelService:
         if not self.is_loaded or self.shap_explainer is None:
             return {"error": "SHAP explainer not available"}
 
+        # Map frontend schema to model features
+        model_input = map_frontend_to_model_features(input_data, self.feature_names)
+
         try:
-            explanation = self.shap_explainer.explain_single(input_data)
+            explanation = self.shap_explainer.explain_single(model_input)
             return explanation
         except Exception as e:
             return {"error": f"SHAP explanation failed: {str(e)}"}
@@ -192,6 +359,21 @@ class MLModelService:
             "missing_nice_to_have": gaps["missing_nice_to_have"],
             "have_required": gaps["have_required"],
             "have_nice_to_have": gaps["have_nice_to_have"]
+        }
+
+    def get_model_info(self) -> Dict[str, Any]:
+        """Get ML model information and metadata."""
+        if not self.is_loaded:
+            return {"error": "Model not loaded"}
+
+        return {
+            "model_type": type(self.model).__name__ if self.model else None,
+            "feature_count": len(self.feature_names),
+            "features": self.feature_names,
+            "classes": self.classes_,
+            "class_count": len(self.classes_),
+            "has_shap_explainer": self.shap_explainer is not None,
+            "target_encoder_loaded": self.target_encoder is not None,
         }
 
 
