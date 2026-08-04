@@ -1,13 +1,13 @@
 {
   "model_version": "1.0.0",
-  "model_type": "SVC",
-  "training_date": "2026-08-01",
+  "model_type": "RandomForest",
+  "training_date": "2026-08-04T14:33:33.996553Z",
   "dataset": {
     "source": "career_dataset_large.csv",
     "rows": 5000,
     "columns": 6,
     "target_column": "Recommended Career",
-    "description": "Kaggle Career Recommendation Dataset (mkechinov/career-recommendation-dataset)"
+    "description": "Kaggle Career Recommendation Dataset"
   },
   "preprocessing": {
     "cgpa_normalization": "Converted to percentage scale (0-100)",
@@ -49,34 +49,42 @@
   ],
   "model_comparison": {
     "RandomForest": {
-      "accuracy": 0.0850,
-      "f1_score": 0.0854,
-      "precision": 0.0854,
-      "recall": 0.0850
+      "accuracy": 0.085,
+      "f1_score": 0.08543478774016912,
+      "cv_f1_mean": 0.08698099567538604,
+      "cv_f1_std": 0.009216542706645426,
+      "cv_acc_mean": 0.08775,
+      "cv_acc_std": 0.009027735042633891,
+      "precision": 0.08641876149748777,
+      "recall": 0.085
     },
     "XGBoost": {
-      "accuracy": 0.0940,
-      "f1_score": 0.0933,
-      "precision": 0.0933,
-      "recall": 0.0940
+      "accuracy": 0.094,
+      "f1_score": 0.0933196087971477,
+      "cv_f1_mean": 0.07510604989601051,
+      "cv_f1_std": 0.00917547398643301,
+      "cv_acc_mean": 0.07575000000000001,
+      "cv_acc_std": 0.008965210538520552,
+      "precision": 0.0931418404609384,
+      "recall": 0.094
     },
     "SVM": {
-      "accuracy": 0.0990,
-      "f1_score": 0.0975,
-      "precision": 0.0975,
-      "recall": 0.0990
+      "accuracy": 0.099,
+      "f1_score": 0.09751354726352522,
+      "cv_f1_mean": 0.08151289944980764,
+      "cv_f1_std": 0.010223116337202024,
+      "cv_acc_mean": 0.08249999999999999,
+      "cv_acc_std": 0.009999999999999998,
+      "precision": 0.09869996399403762,
+      "recall": 0.099
     }
   },
   "best_model": {
-    "name": "SVM",
-    "f1_score": 0.0975,
-    "accuracy": 0.0990
+    "name": "RandomForest",
+    "f1_score": 0.08543478774016912,
+    "cv_f1_mean": 0.08698099567538604,
+    "accuracy": 0.085
   },
-  "notes": [
-    "Low F1 scores indicate limited predictive power with current features",
-    "Dataset has 12 career classes with imbalanced distribution",
-    "Consider adding more features or using placement dataset for readiness scoring"
-  ],
   "reproduction": {
     "command": "python -m app.ml.train --data data/career_dataset_large.csv --output ml/saved_models",
     "requirements": "backend/requirements.txt",

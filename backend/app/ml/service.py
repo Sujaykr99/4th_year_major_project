@@ -9,7 +9,7 @@ import warnings
 warnings.filterwarnings("ignore")
 
 from app.core.config import settings
-from app.ml.pipeline import CareerDataProcessor, SHAPExplainer, CAREER_ROLES
+from app.ml.pipeline import CareerDataProcessor, SHAPExplainer, CAREER_ROLES, SHAP_AVAILABLE
 
 
 # Mapping from frontend skill categories to model skill features

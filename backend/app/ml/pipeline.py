@@ -16,9 +16,16 @@ from sklearn.metrics import (
     accuracy_score, precision_score, recall_score, f1_score,
     classification_report, confusion_matrix, roc_auc_score
 )
-import shap
 import warnings
 warnings.filterwarnings("ignore")
+
+# Try to import SHAP, make it optional
+try:
+    import shap
+    SHAP_AVAILABLE = True
+except ImportError:
+    shap = None
+    SHAP_AVAILABLE = False
 
 
 # Career roles from dataset
@@ -324,10 +331,14 @@ class CareerModelTrainer:
         }
 
     def train_all(self, X: np.ndarray, y: np.ndarray) -> Dict[str, Dict]:
-        """Train all models and return evaluation results."""
+        """Train all models and return evaluation results using cross-validation."""
         # Encode target labels
         y_encoded = self.target_encoder.fit_transform(y)
 
+        # Use cross-validation for robust evaluation
+        cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
+
+        # Also keep a holdout test set for final evaluation
         X_train, X_test, y_train, y_test = train_test_split(
             X, y_encoded, test_size=0.2, random_state=42, stratify=y_encoded
         )
@@ -336,11 +347,20 @@ class CareerModelTrainer:
 
         for name, model in self.models.items():
             print(f"\nTraining {name}...")
+
+            # Cross-validation scores
+            cv_f1_scores = cross_val_score(model, X_train, y_train, cv=cv, scoring='f1_weighted', n_jobs=-1)
+            cv_acc_scores = cross_val_score(model, X_train, y_train, cv=cv, scoring='accuracy', n_jobs=-1)
+
+            print(f"  CV F1: {cv_f1_scores.mean():.4f} (+/- {cv_f1_scores.std()*2:.4f})")
+            print(f"  CV Acc: {cv_acc_scores.mean():.4f} (+/- {cv_acc_scores.std()*2:.4f})")
+
+            # Train on full training set for final evaluation
             model.fit(X_train, y_train)
             y_pred = model.predict(X_test)
             y_proba = model.predict_proba(X_test) if hasattr(model, "predict_proba") else None
 
-            # Calculate metrics (using encoded labels)
+            # Calculate metrics on holdout test set
             acc = accuracy_score(y_test, y_pred)
             prec = precision_score(y_test, y_pred, average="weighted", zero_division=0)
             rec = recall_score(y_test, y_pred, average="weighted", zero_division=0)
@@ -351,6 +371,12 @@ class CareerModelTrainer:
                 "precision": prec,
                 "recall": rec,
                 "f1_score": f1,
+                "cv_f1_mean": cv_f1_scores.mean(),
+                "cv_f1_std": cv_f1_scores.std(),
+                "cv_acc_mean": cv_acc_scores.mean(),
+                "cv_acc_std": cv_acc_scores.std(),
+                "cv_f1_scores": cv_f1_scores.tolist(),
+                "cv_acc_scores": cv_acc_scores.tolist(),
                 "classification_report": classification_report(y_test, y_pred, zero_division=0),
                 "confusion_matrix": confusion_matrix(y_test, y_pred).tolist()
             }
@@ -362,12 +388,12 @@ class CareerModelTrainer:
                     result["roc_auc"] = None
 
             self.results[name] = result
-            print(f"  Accuracy: {acc:.4f}, F1: {f1:.4f}")
+            print(f"  Test Accuracy: {acc:.4f}, Test F1: {f1:.4f}")
 
-        # Select best model by F1 score
-        self.best_model_name = max(self.results, key=lambda k: self.results[k]["f1_score"])
+        # Select best model by CV F1 score (more robust)
+        self.best_model_name = max(self.results, key=lambda k: self.results[k]["cv_f1_mean"])
         self.best_model = self.models[self.best_model_name]
-        print(f"\nBest model: {self.best_model_name} (F1: {self.results[self.best_model_name]['f1_score']:.4f})")
+        print(f"\nBest model: {self.best_model_name} (CV F1: {self.results[self.best_model_name]['cv_f1_mean']:.4f})")
 
         return self.results
 
@@ -386,7 +412,10 @@ class SHAPExplainer:
         self.processor = processor
         self.feature_names = feature_names
         self.explainer = None
-        self._build_explainer(X_train)
+        if SHAP_AVAILABLE:
+            self._build_explainer(X_train)
+        else:
+            print("SHAP not available, explainer disabled")
 
     def _build_explainer(self, X_train: np.ndarray):
         """Build SHAP explainer based on model type."""
@@ -402,6 +431,9 @@ class SHAPExplainer:
 
     def explain(self, X: np.ndarray) -> Dict[str, Any]:
         """Generate SHAP explanations for predictions."""
+        if not SHAP_AVAILABLE or self.explainer is None:
+            return {"error": "SHAP explainer not available"}
+
         shap_values = self.explainer.shap_values(X)
 
         # Handle multi-class output
@@ -437,6 +469,8 @@ class SHAPExplainer:
 
     def explain_single(self, input_dict: Dict[str, Any]) -> Dict[str, Any]:
         """Explain a single prediction from raw input."""
+        if not SHAP_AVAILABLE:
+            return {"error": "SHAP not available"}
         X = self.processor.transform_input(input_dict)
         return self.explain(X)
 
@@ -459,6 +493,9 @@ class SHAPExplainer:
 
 def run_training_pipeline(dataset_path: str, output_dir: str) -> Dict[str, Any]:
     """Complete training pipeline: load -> preprocess -> train -> explain -> save."""
+    import json
+    from datetime import datetime
+
     os.makedirs(output_dir, exist_ok=True)
 
     # 1. Load and preprocess
@@ -479,7 +516,7 @@ def run_training_pipeline(dataset_path: str, output_dir: str) -> Dict[str, Any]:
 
     best_model, best_name, target_encoder = trainer.get_best_model()
 
-    # 3. Create SHAP explainer
+    # 3. Create SHAP explainer (optional)
     print("Building SHAP explainer...")
     shap_explainer = SHAPExplainer(best_model, processor, X, processor.feature_columns)
 
@@ -487,10 +524,66 @@ def run_training_pipeline(dataset_path: str, output_dir: str) -> Dict[str, Any]:
     print("Saving artifacts...")
     processor.save(os.path.join(output_dir, "processor.pkl"))
     trainer.save_model(best_model, os.path.join(output_dir, "model.pkl"))
-    shap_explainer.save(os.path.join(output_dir, "shap_explainer.pkl"))
+
+    if SHAP_AVAILABLE and shap_explainer.explainer is not None:
+        shap_explainer.save(os.path.join(output_dir, "shap_explainer.pkl"))
+        print("SHAP explainer saved")
+    else:
+        print("SHAP explainer not available, skipping")
 
     # Save label encoder for target
     joblib.dump(target_encoder, os.path.join(output_dir, "target_encoder.pkl"))
+
+    # 5. Save model metadata with versioning
+    metadata = {
+        "model_version": "1.0.0",
+        "model_type": best_name,
+        "training_date": datetime.utcnow().isoformat() + "Z",
+        "dataset": {
+            "source": os.path.basename(dataset_path),
+            "rows": int(df.shape[0]),
+            "columns": int(df.shape[1]),
+            "target_column": "Recommended Career",
+            "description": "Kaggle Career Recommendation Dataset"
+        },
+        "preprocessing": {
+            "cgpa_normalization": "Converted to percentage scale (0-100)",
+            "skills_binarization": "MultiLabelBinarizer on comma-separated skills",
+            "categorical_encoding": "LabelEncoder for education_level and specialization",
+            "feature_scaling": "StandardScaler on numeric features",
+            "duplicates_removed": 1,
+            "missing_values_filled": "CGPA filled with median"
+        },
+        "features": processor.feature_columns,
+        "classes": target_encoder.classes_.tolist(),
+        "model_comparison": {
+            name: {
+                "accuracy": res["accuracy"],
+                "f1_score": res["f1_score"],
+                "cv_f1_mean": res.get("cv_f1_mean"),
+                "cv_f1_std": res.get("cv_f1_std"),
+                "cv_acc_mean": res.get("cv_acc_mean"),
+                "cv_acc_std": res.get("cv_acc_std"),
+                "precision": res["precision"],
+                "recall": res["recall"]
+            }
+            for name, res in results.items()
+        },
+        "best_model": {
+            "name": best_name,
+            "f1_score": results[best_name]["f1_score"],
+            "cv_f1_mean": results[best_name].get("cv_f1_mean"),
+            "accuracy": results[best_name]["accuracy"]
+        },
+        "reproduction": {
+            "command": f"python -m app.ml.train --data {dataset_path} --output {output_dir}",
+            "requirements": "backend/requirements.txt",
+            "python_version": "3.14"
+        }
+    }
+
+    with open(os.path.join(output_dir, "model_metadata.json"), "w") as f:
+        json.dump(metadata, f, indent=2)
 
     print("Training pipeline complete!")
     return {
@@ -498,5 +591,6 @@ def run_training_pipeline(dataset_path: str, output_dir: str) -> Dict[str, Any]:
         "results": results,
         "exploration": exploration,
         "feature_names": processor.feature_columns,
-        "classes": target_encoder.classes_.tolist()
+        "classes": target_encoder.classes_.tolist(),
+        "metadata": metadata
     }
