@@ -15,11 +15,13 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '18'
-      - name: Install dependencies
+      - name: Install dependencies and build (if frontend present)
         run: |
-          cd frontend
-          npm ci
-      - name: Run build
-        run: |
-          cd frontend
-          npm run build --if-present
+          if [ -f frontend/package.json ]; then
+            echo "Frontend detected — installing and building"
+            cd frontend
+            npm ci
+            npm run build --if-present
+          else
+            echo "No frontend found; skipping npm install/build"
+          fi
