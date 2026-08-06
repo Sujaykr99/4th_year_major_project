@@ -3,30 +3,39 @@ name: Node CI
 on:
   push:
     branches: [main, master]
-    paths:
-      - "frontend/**"
   pull_request:
     branches: [main, master]
-    paths:
-      - "frontend/**"
   workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: ["22"]
     steps:
       - uses: actions/checkout@v4
-      - name: Use Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "18"
-      - name: Install dependencies and build (if frontend present)
+      - name: Check frontend presence
+        id: frontend_check
         run: |
           if [ -f frontend/package.json ]; then
-            echo "Frontend detected — installing and building"
-            cd frontend
-            npm ci
-            npm run build --if-present
+            echo "exists=true" >> "$GITHUB_OUTPUT"
           else
-            echo "No frontend found; skipping npm install/build"
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Use Node.js
+        if: steps.frontend_check.outputs.exists == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+      - name: Install and build frontend when present
+        if: steps.frontend_check.outputs.exists == 'true'
+        run: |
+          cd frontend
+          npm ci
+          if node -e "const fs=require('fs'); const pkg=JSON.parse(fs.readFileSync('package.json','utf8')); process.exit(pkg.scripts && pkg.scripts.build ? 0 : 1)"; then
+            npm run build
+          else
+            echo "No build script found; skipping npm run build"
           fi

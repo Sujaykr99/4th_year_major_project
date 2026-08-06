@@ -10,25 +10,30 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
-      strategy:
+    strategy:
+      fail-fast: false
       matrix:
         python-version: ["3.10", "3.11"]
     steps:
       - uses: actions/checkout@v4
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
-      - name: Install test dependencies (fast)
+      - name: Install dependencies if present
         run: |
           python -m pip install --upgrade pip
-          pip install pytest
-      - name: Run tests (if present)
+          if [ -f backend/requirements.txt ]; then
+            pip install -r backend/requirements.txt
+          else
+            echo "backend/requirements.txt missing; installing pytest only"
+            pip install pytest
+          fi
+      - name: Run tests if present
         run: |
-          if [ -d backend/tests ] && [ "$(ls -A backend/tests)" ]; then
-            echo "Tests found — running pytest"
-            cd backend
-            pytest -q
+          if [ -d backend/tests ] && [ "$(find backend/tests -maxdepth 1 -type f | wc -l)" -gt 0 ]; then
+            echo "Tests found - running pytest"
+            pytest -q backend/tests
           else
             echo "No backend tests found; skipping pytest"
           fi
