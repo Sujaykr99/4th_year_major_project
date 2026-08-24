@@ -1,0 +1,151 @@
+{
+  "model_name": "Matrix Hierarchical Career Predictor V2",
+  "version": "2.0.0",
+  "architecture": "Hierarchical: Sector Classifier -> Role Classifiers",
+  "created_date": "2026-08-14T05:41:48.746671Z",
+  "dataset": {
+    "source": "Stack Overflow Developer Survey 2024",
+    "total_responses": 65437,
+    "filtered_samples": 14374,
+    "filter_criteria": "Early career (\u22645 years pro exp) + students/learners",
+    "features": 66,
+    "career_classes": 11,
+    "sector_classes": 6
+  },
+  "sectors": [
+    "Web Development",
+    "Backend & Data Engineering",
+    "Mobile Development",
+    "Cloud & DevOps",
+    "Security & Infrastructure",
+    "Technical Leadership & Specialized"
+  ],
+  "sector_mapping": {
+    "Web Development": [
+      "Frontend Developer",
+      "Full Stack Developer",
+      "UI/UX Designer"
+    ],
+    "Backend & Data Engineering": [
+      "Backend Developer",
+      "Database Engineer"
+    ],
+    "Mobile Development": [
+      "Mobile App Developer"
+    ],
+    "Cloud & DevOps": [
+      "DevOps Engineer",
+      "Cloud Engineer"
+    ],
+    "Security & Infrastructure": [
+      "Cyber Security Engineer",
+      "Network Engineer"
+    ],
+    "Technical Leadership & Specialized": [
+      "Engineering Manager",
+      "QA Engineer",
+      "Data Scientist",
+      "AI/ML Engineer",
+      "Embedded Engineer"
+    ]
+  },
+  "feature_types": {
+    "binary_skills": 55,
+    "experience_education": 6,
+    "composite_scores": 5
+  },
+  "sector_classifier": {
+    "model": "CatBoost",
+    "params": {
+      "iterations": 500,
+      "depth": 10,
+      "learning_rate": 0.06,
+      "l2_leaf_reg": 3,
+      "auto_class_weights": "Balanced"
+    },
+    "cv_macro_f1": 0.4594,
+    "cv_macro_f1_std": 0.0344,
+    "test_accuracy": 0.6633,
+    "test_macro_f1": 0.4734,
+    "test_weighted_f1": 0.6681
+  },
+  "role_classifiers": {
+    "Web Development": {
+      "model": "RandomForest",
+      "cv_macro_f1": 0.5186,
+      "roles": 3
+    },
+    "Backend & Data Engineering": {
+      "model": "CatBoost",
+      "cv_macro_f1": 0.7457,
+      "roles": 2
+    },
+    "Cloud & DevOps": {
+      "model": "RandomForest",
+      "cv_macro_f1": 0.5291,
+      "roles": 2
+    },
+    "Security & Infrastructure": {
+      "model": "CatBoost",
+      "cv_macro_f1": 0.7103,
+      "roles": 2
+    }
+  },
+  "hierarchical_evaluation": {
+    "test_samples": 2875,
+    "sector_accuracy": 0.6633,
+    "role_accuracy_conditional": 0.9534,
+    "per_sector": {
+      "Web Development": {
+        "sector_acc": 0.755,
+        "role_acc": 0.935,
+        "n": 1755
+      },
+      "Backend & Data Engineering": {
+        "sector_acc": 0.568,
+        "role_acc": 0.989,
+        "n": 713
+      },
+      "Mobile Development": {
+        "sector_acc": 0.591,
+        "role_acc": 1.0,
+        "n": 164
+      },
+      "Cloud & DevOps": {
+        "sector_acc": 0.397,
+        "role_acc": 0.931,
+        "n": 116
+      },
+      "Security & Infrastructure": {
+        "sector_acc": 0.128,
+        "role_acc": 0.953,
+        "n": 86
+      },
+      "Technical Leadership & Specialized": {
+        "sector_acc": 0.561,
+        "role_acc": 1.0,
+        "n": 41
+      }
+    }
+  },
+  "known_limitations": [
+    "Security & Infrastructure sector has low accuracy (12.8%) due to Cyber Security \u2248 Network Engineer skill overlap",
+    "Cloud & DevOps sector accuracy limited (39.7%) by DevOps/Cloud skill similarity",
+    "Technical Leadership sector has only 41 test samples (mixed careers)",
+    "Stack Overflow survey data lacks student outcome ground truth",
+    "Macro F1 ceiling ~47% with current data source"
+  ],
+  "reproduction": {
+    "preprocess": "python backend/app/ml/so_preprocess_hierarchical_v2.py --input survey_results_public.csv --output matrix_dataset_hierarchical_v2.csv",
+    "train_sector": "python -c \"from catboost import CatBoostClassifier; import joblib; ...\"",
+    "train_roles": "python backend/app/ml/train_role_classifiers.py --data matrix_dataset_hierarchical_v2.csv --output backend/ml/saved_models_roles_v2",
+    "evaluate": "python backend/app/ml/hierarchical_predictor_v2.py --data matrix_dataset_hierarchical_v2.csv"
+  },
+  "deployment": {
+    "artifacts_dir": "backend/ml/saved_models_sector_v2/ & backend/ml/saved_models_roles_v2/",
+    "predictor_class": "HierarchicalPredictorV2",
+    "confidence_threshold": 0.4,
+    "input_format": "dict of 66 features (binary skills + exp/edu + composites)",
+    "output_format": "{sector, sector_confidence, role, role_confidence, hierarchical: true}"
+  }
+}

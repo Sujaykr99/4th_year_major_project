@@ -6,7 +6,7 @@ from datetime import datetime
 
 from app.core.database import connect_to_mongo, close_mongo_connection
 from app.core.config import settings
-from app.ml.service import ml_service
+from app.ml.inference.service_v2 import unified_ml_service
 from app.api.v1.endpoints import auth, profile, prediction, roadmap
 
 
@@ -14,9 +14,9 @@ from app.api.v1.endpoints import auth, profile, prediction, roadmap
 async def lifespan(app: FastAPI):
     # Startup
     await connect_to_mongo()
-    # Load ML model
-    if not ml_service.load():
-        print("Warning: ML model failed to load. Predictions will not be available.")
+    # Load ML models
+    if not unified_ml_service.load_all():
+        print("Warning: ML models failed to load. Predictions will not be available.")
     yield
     # Shutdown
     await close_mongo_connection()
@@ -62,5 +62,5 @@ async def health_check():
     return {
         "status": "healthy",
         "version": settings.APP_VERSION,
-        "model_loaded": ml_service.is_loaded,
+        "models_loaded": unified_ml_service.is_loaded,
     }

@@ -1,0 +1,79 @@
+{
+  "weights": {
+    "academic": 0.25,
+    "technical_skills": 0.2,
+    "projects": 0.2,
+    "experience": 0.15,
+    "soft_skills": 0.1,
+    "achievements": 0.1
+  },
+  "feature_ranges": {
+    "cgpa": [
+      5.0,
+      10.0
+    ],
+    "backlogs": [
+      0,
+      5
+    ],
+    "total_projects": [
+      0,
+      15
+    ],
+    "web_projects": [
+      0,
+      8
+    ],
+    "ai_ml_projects": [
+      0,
+      5
+    ],
+    "mobile_projects": [
+      0,
+      4
+    ],
+    "internship_count": [
+      0,
+      4
+    ],
+    "internship_duration_months": [
+      0,
+      12
+    ],
+    "certifications": [
+      0,
+      8
+    ],
+    "hackathons": [
+      0,
+      6
+    ],
+    "github_repos": [
+      0,
+      30
+    ],
+    "communication": [
+      0,
+      100
+    ],
+    "aptitude": [
+      0,
+      100
+    ],
+    "problem_solving": [
+      0,
+      100
+    ],
+    "leadership": [
+      0,
+      100
+    ]
+  },
+  "levels": [
+    "Not Ready",
+    "Needs Improvement",
+    "Moderately Ready",
+    "Ready",
+    "Highly Ready"
+  ]
+}

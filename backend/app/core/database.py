@@ -19,7 +19,9 @@ async def connect_to_mongo():
     # Create indexes
     await db.db.users.create_index("email", unique=True)
     await db.db.users.create_index("username", unique=True)
+    await db.db.profiles.create_index("user_id", unique=True)
     await db.db.predictions.create_index("user_id")
+    await db.db.placement_predictions.create_index("user_id")
     await db.db.predictions.create_index("created_at")
     await db.db.skills.create_index([("user_id", 1), ("skill_name", 1)], unique=True)
     await db.db.projects.create_index("user_id")

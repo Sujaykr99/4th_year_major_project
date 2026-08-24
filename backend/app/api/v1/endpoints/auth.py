@@ -4,6 +4,7 @@ from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
+from bson import ObjectId
 
 from app.core import security
 from app.core.config import settings
@@ -37,7 +38,8 @@ async def register(
     user_dict["hashed_password"] = hashed_password
     user_dict["created_at"] = datetime.utcnow()
     user_dict["updated_at"] = datetime.utcnow()
-
+    user_dict["is_active"] = True
+    
     result = await db.users.insert_one(user_dict)
     user_dict["id"] = str(result.inserted_id)
 
@@ -88,7 +90,10 @@ async def get_current_user_info(
     """
     Get current user information.
     """
-    user_dict = await db.users.find_one({"_id": current_user_id})
+    if not ObjectId.is_valid(current_user_id):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Could not validate credentials")
+
+    user_dict = await db.users.find_one({"_id": ObjectId(current_user_id)})
     if not user_dict:
         raise HTTPException(status_code=404, detail="User not found")
     user_dict["id"] = str(user_dict["_id"])

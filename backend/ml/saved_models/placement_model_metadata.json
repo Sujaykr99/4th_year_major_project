@@ -1,10 +1,10 @@
 {
   "model_version": "1.0.0",
   "model_type": "LogisticRegression",
-  "training_date": "2026-08-04T20:49:53.983393Z",
+  "training_date": "2026-08-15T07:36:11.354696Z",
   "dataset": {
     "source": "student_placement_prediction_dataset_2026.csv",
-    "rows": 100000,
+    "rows": 50000,
     "columns": 26,
     "target_column": "placement_status",
     "description": "Student Placement Prediction Dataset 2026"
@@ -49,66 +49,66 @@
   ],
   "model_comparison": {
     "RandomForest": {
-      "accuracy": 0.5662,
-      "f1_score": 0.5277910682888585,
-      "cv_f1_mean": 0.5284532943794986,
-      "cv_f1_std": 0.0034248946699570073,
-      "cv_acc_mean": 0.56585,
-      "cv_acc_std": 0.0032760017551887993,
-      "cv_roc_auc_mean": 0.5773043110283339,
-      "cv_roc_auc_std": 0.0038233331716027276,
-      "precision": 0.561281517688273,
-      "recall": 0.5662,
-      "roc_auc": 0.5787282725222815
+      "accuracy": 0.5605,
+      "f1_score": 0.5235771576648429,
+      "cv_f1_mean": 0.5312237294172745,
+      "cv_f1_std": 0.0019664961881440627,
+      "cv_acc_mean": 0.5655499794574511,
+      "cv_acc_std": 0.0031767648260569064,
+      "cv_roc_auc_mean": 0.5726427453384038,
+      "cv_roc_auc_std": 0.0021456639242585936,
+      "precision": 0.5537369331381392,
+      "recall": 0.5605,
+      "roc_auc": 0.5631207601609421
     },
     "XGBoost": {
-      "accuracy": 0.5441,
-      "f1_score": 0.5341163458352491,
-      "cv_f1_mean": 0.5388671933059103,
-      "cv_f1_std": 0.003254373377327167,
-      "cv_acc_mean": 0.5480625,
-      "cv_acc_std": 0.0033719893979667344,
-      "cv_roc_auc_mean": 0.553432150395821,
-      "cv_roc_auc_std": 0.002990707411394591,
-      "precision": 0.536728893433269,
-      "recall": 0.5441,
-      "roc_auc": 0.5484807539057568
+      "accuracy": 0.5354,
+      "f1_score": 0.5280101513397806,
+      "cv_f1_mean": 0.5339576872927035,
+      "cv_f1_std": 0.0019119383159485902,
+      "cv_acc_mean": 0.5407750050508425,
+      "cv_acc_std": 0.0016291034297004072,
+      "cv_roc_auc_mean": 0.543199327762324,
+      "cv_roc_auc_std": 0.0034336214561311606,
+      "precision": 0.5289171465330453,
+      "recall": 0.5354,
+      "roc_auc": 0.5374615314916172
     },
     "GradientBoosting": {
-      "accuracy": 0.5608,
-      "f1_score": 0.5434911918678131,
-      "cv_f1_mean": 0.5428092888204883,
-      "cv_f1_std": 0.0020873529214398903,
-      "cv_acc_mean": 0.5592625,
-      "cv_acc_std": 0.001585283886248774,
-      "cv_roc_auc_mean": 0.5654580741959961,
-      "cv_roc_auc_std": 0.0028411397736166923,
-      "precision": 0.5533380097765584,
-      "recall": 0.5608,
-      "roc_auc": 0.5652961580227702
+      "accuracy": 0.545,
+      "f1_score": 0.5317561324562814,
+      "cv_f1_mean": 0.5435981844284917,
+      "cv_f1_std": 0.0035876182191697564,
+      "cv_acc_mean": 0.5538001319389516,
+      "cv_acc_std": 0.0038742888080544415,
+      "cv_roc_auc_mean": 0.5600238174308932,
+      "cv_roc_auc_std": 0.0007447316680581475,
+      "precision": 0.5367994922194596,
+      "recall": 0.545,
+      "roc_auc": 0.5468148123426837
     },
     "LogisticRegression": {
-      "accuracy": 0.57165,
-      "f1_score": 0.5488176997087252,
-      "cv_f1_mean": 0.5468597080068889,
-      "cv_f1_std": 0.0034172848391967486,
-      "cv_acc_mean": 0.569875,
-      "cv_acc_std": 0.0033881687531762657,
-      "cv_roc_auc_mean": 0.5853952102304103,
-      "cv_roc_auc_std": 0.004206773878784848,
-      "precision": 0.5660953493063244,
-      "recall": 0.57165,
-      "roc_auc": 0.5853757642206284
+      "accuracy": 0.5621,
+      "f1_score": 0.5400636442184191,
+      "cv_f1_mean": 0.5505914291732207,
+      "cv_f1_std": 0.0034779852574358173,
+      "cv_acc_mean": 0.5717000694628885,
+      "cv_acc_std": 0.003434453532880256,
+      "cv_roc_auc_mean": 0.5859720788137707,
+      "cv_roc_auc_std": 0.003146723932105259,
+      "precision": 0.5549782825316378,
+      "recall": 0.5621,
+      "roc_auc": 0.5770038852226111
     }
   },
   "best_model": {
     "name": "LogisticRegression",
-    "f1_score": 0.5488176997087252,
-    "cv_roc_auc_mean": 0.5853952102304103,
-    "accuracy": 0.57165
+    "f1_score": 0.5400636442184191,
+    "cv_roc_auc_mean": 0.5859720788137707,
+    "accuracy": 0.5621
   },
   "reproduction": {
-    "command": "python -m app.ml.train_placement --data data/student_placement_prediction_dataset_2026.csv --output ml/saved_models",
+    "command": "python -m app.ml.train_placement --data backend/data/student_placement_prediction_dataset_2026.csv --output backend/ml/saved_models",
     "requirements": "backend/requirements.txt",
     "python_version": "3.14"
   }

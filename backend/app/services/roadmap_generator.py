@@ -146,75 +146,80 @@ ROLE_REQUIREMENTS = {
 }
 
 
-# Course/Resource database
+# Course/Resource database (Checklist & YouTube focused)
 RESOURCE_DATABASE = {
     "courses": {
         "Python": [
-            {"title": "Python for Everybody", "provider": "Coursera", "duration_weeks": 8, "url": "https://coursera.org/learn/python", "level": "beginner"},
-            {"title": "Complete Python Bootcamp", "provider": "Udemy", "duration_weeks": 6, "url": "https://udemy.com/course/complete-python-bootcamp", "level": "beginner"},
-            {"title": "Advanced Python", "provider": "Coursera", "duration_weeks": 4, "url": "https://coursera.org/learn/advanced-python", "level": "advanced"}
+            {"title": "Python Full Course for Beginners", "provider": "YouTube (Programming with Mosh)", "duration_weeks": 2, "url": "https://www.youtube.com/watch?v=_uQrJ0TkZlc", "level": "beginner"},
+            {"title": "Python Backend Web Development Course (with Django)", "provider": "YouTube (freeCodeCamp)", "duration_weeks": 4, "url": "https://www.youtube.com/watch?v=F5mRW0jo-U4", "level": "intermediate"}
         ],
         "Machine Learning": [
-            {"title": "Machine Learning by Andrew Ng", "provider": "Coursera", "duration_weeks": 11, "url": "https://coursera.org/learn/machine-learning", "level": "beginner"},
-            {"title": "Deep Learning Specialization", "provider": "Coursera", "duration_weeks": 16, "url": "https://coursera.org/specializations/deep-learning", "level": "intermediate"}
+            {"title": "Machine Learning for Everybody", "provider": "YouTube (freeCodeCamp)", "duration_weeks": 4, "url": "https://www.youtube.com/watch?v=i_LwzRmA_08", "level": "beginner"}
         ],
         "Docker": [
-            {"title": "Docker Mastery", "provider": "Udemy", "duration_weeks": 4, "url": "https://udemy.com/course/docker-mastery", "level": "beginner"},
-            {"title": "Docker and Kubernetes", "provider": "Udemy", "duration_weeks": 6, "url": "https://udemy.com/course/docker-and-kubernetes", "level": "intermediate"}
+            {"title": "Docker Tutorial for Beginners", "provider": "YouTube (TechWorld with Nana)", "duration_weeks": 1, "url": "https://www.youtube.com/watch?v=3c-iBn73dDE", "level": "beginner"}
         ],
         "Kubernetes": [
-            {"title": "Certified Kubernetes Administrator (CKA)", "provider": "Linux Foundation", "duration_weeks": 8, "url": "https://training.linuxfoundation.org/training/cka", "level": "advanced"},
-            {"title": "Kubernetes for Developers", "provider": "Udemy", "duration_weeks": 4, "url": "https://udemy.com/course/kubernetes-for-developers", "level": "intermediate"}
+            {"title": "Kubernetes Tutorial for Beginners", "provider": "YouTube (TechWorld with Nana)", "duration_weeks": 2, "url": "https://www.youtube.com/watch?v=X48VuDVv0do", "level": "beginner"}
         ],
         "AWS": [
-            {"title": "AWS Certified Solutions Architect", "provider": "A Cloud Guru", "duration_weeks": 12, "url": "https://acloudguru.com/course/aws-certified-solutions-architect-associate", "level": "intermediate"},
-            {"title": "AWS Certified Developer", "provider": "A Cloud Guru", "duration_weeks": 8, "url": "https://acloudguru.com/course/aws-certified-developer-associate", "level": "intermediate"}
+            {"title": "AWS Certified Cloud Practitioner Certification Course", "provider": "YouTube (freeCodeCamp)", "duration_weeks": 3, "url": "https://www.youtube.com/watch?v=SOTamWNgDKc", "level": "beginner"}
         ],
         "System Design": [
-            {"title": "System Design Interview", "provider": "Educative", "duration_weeks": 6, "url": "https://educative.io/courses/system-design-interview", "level": "advanced"},
-            {"title": "Designing Data-Intensive Applications", "provider": "Book", "duration_weeks": 8, "url": "https://dataintensiveapplications.com", "level": "advanced"}
+            {"title": "System Design for Beginners Course", "provider": "YouTube (freeCodeCamp)", "duration_weeks": 2, "url": "https://www.youtube.com/watch?v=m8Icp_Cid5o", "level": "beginner"}
         ],
         "React": [
-            {"title": "React - The Complete Guide", "provider": "Udemy", "duration_weeks": 8, "url": "https://udemy.com/course/react-the-complete-guide", "level": "beginner"},
-            {"title": "Advanced React Patterns", "provider": "Frontend Masters", "duration_weeks": 4, "url": "https://frontendmasters.com/courses/advanced-react", "level": "advanced"}
+            {"title": "React Course - Beginner's Tutorial", "provider": "YouTube (freeCodeCamp)", "duration_weeks": 2, "url": "https://www.youtube.com/watch?v=bMknfKXIFA8", "level": "beginner"}
         ],
         "SQL": [
-            {"title": "SQL for Data Science", "provider": "Coursera", "duration_weeks": 4, "url": "https://coursera.org/learn/sql-for-data-science", "level": "beginner"},
-            {"title": "Advanced SQL", "provider": "Mode Analytics", "duration_weeks": 3, "url": "https://mode.com/sql-tutorial", "level": "intermediate"}
+            {"title": "SQL Tutorial - Full Database Course for Beginners", "provider": "YouTube (freeCodeCamp)", "duration_weeks": 1, "url": "https://www.youtube.com/watch?v=HXV3zeJZ1EQ", "level": "beginner"}
+        ],
+        "JavaScript": [
+            {"title": "JavaScript Tutorial for Beginners", "provider": "YouTube (Programming with Mosh)", "duration_weeks": 2, "url": "https://www.youtube.com/watch?v=W6NZfCO5SIk", "level": "beginner"}
+        ],
+        "Java": [
+            {"title": "Java Tutorial for Beginners", "provider": "YouTube (Programming with Mosh)", "duration_weeks": 3, "url": "https://www.youtube.com/watch?v=eIrMbAQSU34", "level": "beginner"}
+        ],
+        "Node.js": [
+            {"title": "Node.js and Express.js - Full Course", "provider": "YouTube (freeCodeCamp)", "duration_weeks": 3, "url": "https://www.youtube.com/watch?v=Oe421EPjeBE", "level": "beginner"}
         ]
     },
     "projects": {
         "Software Engineer": [
-            {"title": "Build a REST API with FastAPI", "description": "Create a complete CRUD API with authentication, database, and tests", "skills": ["Python", "FastAPI", "SQL", "Docker"], "duration_weeks": 3},
-            {"title": "Microservices E-commerce Platform", "description": "Build a distributed e-commerce system with multiple services", "skills": ["Python", "Docker", "Kubernetes", "Message Queues"], "duration_weeks": 8}
+            {"title": "Build a REST API (Portfolio Project)", "description": "Create a CRUD API using your preferred language, connect it to a database, and deploy it.", "skills": ["Backend", "API", "Database", "Deployment"], "duration_weeks": 2}
         ],
         "Data Scientist": [
-            {"title": "End-to-End ML Pipeline", "description": "Build a complete ML pipeline from data ingestion to model deployment", "skills": ["Python", "MLOps", "Docker", "Airflow"], "duration_weeks": 6},
-            {"title": "Kaggle Competition Project", "description": "Participate in a Kaggle competition and document your approach", "skills": ["Python", "ML", "Feature Engineering"], "duration_weeks": 4}
+            {"title": "End-to-End ML Pipeline (Portfolio Project)", "description": "Scrape data, clean it, train a model, and deploy it via an API.", "skills": ["Python", "ML", "Deployment"], "duration_weeks": 3}
         ],
         "Web Developer": [
-            {"title": "Full-Stack E-commerce Site", "description": "Build a complete e-commerce site with cart, payments, and admin panel", "skills": ["React", "Node.js", "PostgreSQL", "Stripe"], "duration_weeks": 6},
-            {"title": "Real-time Chat Application", "description": "Build a chat app with WebSockets, rooms, and message history", "skills": ["React", "Node.js", "Socket.io", "Redis"], "duration_weeks": 4}
+            {"title": "Full-Stack Portfolio Website", "description": "Build a personal portfolio with a React frontend and a simple backend for a contact form.", "skills": ["React", "CSS", "Backend"], "duration_weeks": 2}
         ],
         "DevOps Engineer": [
-            {"title": "CI/CD Pipeline for Microservices", "description": "Set up complete CI/CD with GitHub Actions, Docker, and Kubernetes", "skills": ["GitHub Actions", "Docker", "Kubernetes", "Helm"], "duration_weeks": 4},
-            {"title": "Infrastructure as Code with Terraform", "description": "Provision complete AWS infrastructure using Terraform modules", "skills": ["Terraform", "AWS", "Networking"], "duration_weeks": 3}
+            {"title": "CI/CD Pipeline (Portfolio Project)", "description": "Set up GitHub Actions to test, build, and deploy a simple Dockerized app to AWS.", "skills": ["GitHub Actions", "Docker", "AWS"], "duration_weeks": 2}
         ],
         "Cloud Architect": [
-            {"title": "Multi-Region AWS Architecture", "description": "Design and implement a highly available multi-region architecture", "skills": ["AWS", "Networking", "Disaster Recovery"], "duration_weeks": 6},
-            {"title": "Serverless Event-Driven System", "description": "Build a serverless system using Lambda, API Gateway, EventBridge", "skills": ["AWS", "Serverless", "Event-Driven"], "duration_weeks": 4}
+            {"title": "Serverless Web App", "description": "Deploy a static website on S3, backed by API Gateway and Lambda.", "skills": ["AWS", "Serverless", "S3"], "duration_weeks": 2}
+        ],
+        "Machine Learning Engineer": [
+             {"title": "Model Serving API", "description": "Take a pre-trained HuggingFace model and serve it using FastAPI and Docker.", "skills": ["Python", "Docker", "FastAPI", "ML"], "duration_weeks": 2}
+        ],
+        "Data Analyst": [
+             {"title": "Interactive Dashboard", "description": "Analyze a public dataset and build an interactive dashboard using PowerBI or Tableau.", "skills": ["SQL", "Data Visualization", "Dashboarding"], "duration_weeks": 2}
+        ],
+        "Full Stack Developer": [
+             {"title": "E-commerce Clone", "description": "Build a full e-commerce site with product listings, cart, and mock checkout.", "skills": ["React", "Node.js", "Database"], "duration_weeks": 4}
         ]
     },
     "certifications": {
-        "Software Engineer": ["AWS Certified Developer", "Oracle Certified Professional", "CKAD"],
-        "Data Scientist": ["TensorFlow Developer", "AWS ML Specialty", "Databricks Certified Data Scientist"],
-        "Web Developer": ["Meta Front-End Developer", "Google Web Developer"],
-        "Mobile Developer": ["Google Associate Android Developer", "Apple iOS Developer"],
-        "DevOps Engineer": ["AWS DevOps Engineer", "CKA", "CKAD", "HashiCorp Terraform"],
-        "Cloud Architect": ["AWS Solutions Architect Professional", "Google Cloud Architect", "Azure Solutions Architect Expert"],
-        "Machine Learning Engineer": ["TensorFlow Developer", "AWS ML Specialty", "Google Cloud ML Engineer"],
-        "Data Analyst": ["Google Data Analytics", "Microsoft Power BI", "Tableau Desktop Specialist"],
-        "Full Stack Developer": ["AWS Certified Developer", "Meta Full Stack Developer"]
+        "Software Engineer": ["AWS Certified Developer Associate", "Hackerrank Problem Solving Certificate"],
+        "Data Scientist": ["TensorFlow Developer Certificate", "Google Data Analytics Certificate"],
+        "Web Developer": ["Meta Front-End Developer", "freeCodeCamp Responsive Web Design"],
+        "Mobile Developer": ["Meta Android/iOS Developer Professional Certificate"],
+        "DevOps Engineer": ["AWS Certified DevOps Engineer", "Certified Kubernetes Administrator (CKA)"],
+        "Cloud Architect": ["AWS Certified Solutions Architect Associate"],
+        "Machine Learning Engineer": ["AWS Certified Machine Learning Specialty"],
+        "Data Analyst": ["Google Data Analytics Professional Certificate", "Microsoft Certified: Power BI Data Analyst Associate"],
+        "Full Stack Developer": ["IBM Full Stack Software Developer Professional Certificate"]
     }
 }
 
@@ -275,7 +280,7 @@ def generate_roadmap(
                     "step": step,
                     "category": "course",
                     "title": course["title"],
-                    "description": f"Learn {skill} - {course['description'] if 'description' in course else f'{course[\"provider\"]} course'}",
+                    "description": f"Learn {skill} - {course['description'] if 'description' in course else course.get('provider', '') + ' course'}",
                     "duration_weeks": course["duration_weeks"],
                     "priority": "high",
                     "resources": [course["url"]],
@@ -362,11 +367,11 @@ def generate_roadmap(
 def get_roadmap_summary(roadmap: Dict[str, Any]) -> str:
     """Generate human-readable roadmap summary."""
     lines = [
-        f"📋 Personalized Roadmap for {roadmap['target_role']}",
+        f"📋 Placement Readiness Checklist: {roadmap['target_role']}",
         f"⏱️  Estimated Duration: {roadmap['total_duration_weeks']} weeks ({roadmap['estimated_hours_per_week']} hrs/week)",
         f"🎯 Focus Areas: {', '.join(roadmap['focus_areas'])}",
         "",
-        "📚 Skill Gaps Analysis:"
+        "📚 Skill Gaps Analysis (From ML Model):"
     ]
 
     gaps = roadmap["skill_gaps"]

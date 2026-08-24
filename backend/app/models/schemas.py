@@ -3,18 +3,31 @@ from datetime import datetime
 from typing import Optional, List, Dict, Any
 from pydantic import BaseModel, Field, EmailStr
 from bson import ObjectId
+from pydantic_core import core_schema
 
 
 class PyObjectId(ObjectId):
     @classmethod
-    def __get_validators__(cls):
-        yield cls.validate
+    def __get_pydantic_core_schema__(cls, source_type, handler):
+        return core_schema.no_info_plain_validator_function(
+            cls.validate
+        )
 
     @classmethod
     def validate(cls, v):
+        if isinstance(v, ObjectId):
+            return v
+
         if not ObjectId.is_valid(v):
             raise ValueError("Invalid objectid")
+
         return ObjectId(v)
+
+    @classmethod
+    def __get_pydantic_json_schema__(cls, core_schema, handler):
+        return {"type": "string"}
+
+
 
     @classmethod
     def __get_pydantic_json_schema__(cls, core_schema, handler):
@@ -111,6 +124,75 @@ class Experience(BaseModel):
     skills_used: List[str] = []
 
 
+# Required fields for profile completion (core fields needed for prediction)
+REQUIRED_PROFILE_FIELDS = [
+    "cgpa",
+    "university_tier",
+    "graduation_year",
+    "programming_skills",
+    "framework_skills",
+    "tool_skills",
+    "soft_skills",
+    "num_projects",
+    "num_internships",
+    "hackathon_participation",
+    "certifications_count",
+]
+
+# Optional fields that enhance prediction but aren't required
+OPTIONAL_PROFILE_FIELDS = [
+    "age",
+    "gender",
+    "branch",
+    "college_tier",
+    "coding_skill_score",
+    "aptitude_score",
+    "communication_skill_score",
+    "logical_reasoning_score",
+    "github_repos",
+    "linkedin_connections",
+    "mock_interview_score",
+    "attendance_percentage",
+    "backlogs",
+    "extracurricular_score",
+    "leadership_score",
+    "volunteer_experience",
+    "sleep_hours",
+    "study_hours_per_day",
+    "years_code_pro",
+    "years_code",
+    "ed_level",
+    "work_exp_count",
+    "is_developer",
+    "remote_pref",
+]
+
+
+def calculate_profile_completion(profile_dict: Dict[str, Any]) -> float:
+    """Calculate profile completion percentage based on required fields only.
+    Optional fields do not count toward completion.
+    """
+    if not profile_dict:
+        return 0.0
+
+    filled = 0
+    for field in REQUIRED_PROFILE_FIELDS:
+        value = profile_dict.get(field)
+        if value is not None:
+            if isinstance(value, list) and len(value) > 0:
+                filled += 1
+            elif isinstance(value, (int, float)) and value != 0:
+                filled += 1
+            elif isinstance(value, str) and value.strip():
+                filled += 1
+            elif isinstance(value, bool):
+                filled += 1
+            else:
+                filled += 1
+
+    return round((filled / len(REQUIRED_PROFILE_FIELDS)) * 100, 1)
+
+
 class StudentProfile(BaseModel):
     # Academic
     current_education: Optional[Education] = None
@@ -133,6 +215,10 @@ class StudentProfile(BaseModel):
     remote_preference: bool = True
     salary_expectation: Optional[str] = None
 
+    # Raw prediction-form fields are persisted as part of the authenticated
+    # user's profile. Ownership is always assigned by the backend route.
+    prediction_profile: Dict[str, Any] = Field(default_factory=dict)
+
     # Metadata
     profile_completion: float = 0.0
     updated_at: datetime = Field(default_factory=datetime.utcnow)
@@ -152,6 +238,7 @@ class ProfileUpdate(BaseModel):
     preferred_locations: Optional[List[str]] = None
     remote_preference: Optional[bool] = None
     salary_expectation: Optional[str] = None
+    prediction_profile: Optional[Dict[str, Any]] = None
 
 
 class ProfileResponse(StudentProfile):
@@ -185,6 +272,34 @@ class PredictionInput(BaseModel):
     hackathon_participation: int = Field(..., ge=0)
     certifications_count: int = Field(..., ge=0)
 
+    # Placement-specific features (optional, defaults provided)
+    age: Optional[int] = Field(None, ge=18, le=35)
+    gender: Optional[str] = None  # Male, Female, Other
+    branch: Optional[str] = None  # Computer Science, IT, ECE, etc.
+    college_tier: Optional[int] = Field(None, ge=1, le=3)
+    coding_skill_score: Optional[int] = Field(None, ge=0, le=100)
+    aptitude_score: Optional[int] = Field(None, ge=0, le=100)
+    communication_skill_score: Optional[int] = Field(None, ge=0, le=100)
+    logical_reasoning_score: Optional[int] = Field(None, ge=0, le=100)
+    github_repos: Optional[int] = Field(None, ge=0)
+    linkedin_connections: Optional[int] = Field(None, ge=0)
+    mock_interview_score: Optional[int] = Field(None, ge=0, le=100)
+    attendance_percentage: Optional[int] = Field(None, ge=0, le=100)
+    backlogs: Optional[int] = Field(None, ge=0)
+    extracurricular_score: Optional[int] = Field(None, ge=0, le=100)
+    leadership_score: Optional[int] = Field(None, ge=0, le=100)
+    volunteer_experience: Optional[str] = None  # Yes, No
+    sleep_hours: Optional[int] = Field(None, ge=0, le=12)
+    study_hours_per_day: Optional[int] = Field(None, ge=0, le=16)
+
+    # Career model features (optional)
+    years_code_pro: Optional[float] = Field(None, ge=0)
+    years_code: Optional[float] = Field(None, ge=0)
+    ed_level: Optional[int] = Field(None, ge=0, le=5)
+    work_exp_count: Optional[int] = Field(None, ge=0, le=5)
+    is_developer: Optional[int] = Field(None, ge=0, le=1)
+    remote_pref: Optional[int] = Field(None, ge=0, le=2)  # 0=onsite, 1=hybrid, 2=remote
+
     # Preferences
     preferred_role: Optional[str] = None
 
@@ -196,6 +311,7 @@ class CareerPrediction(BaseModel):
 
 
 class PredictionResult(BaseModel):
+    id: Optional[str] = None
     predicted_role: str
     confidence: float
     confidence_level: str

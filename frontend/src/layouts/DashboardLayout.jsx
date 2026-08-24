@@ -1,10 +1,10 @@
 import Sidebar from '../components/layout/Sidebar'
 import Topbar from '../components/layout/Topbar'
 
-function DashboardLayout({ activeNav, isSidebarOpen, onToggleSidebar, onChangeNav, onNotice, children }) {
+function DashboardLayout({ activeNav, isSidebarOpen, onToggleSidebar, onChangeNav, onNotice, user, onLogout, children }) {
   return (
     <div className={`app-shell ${isSidebarOpen ? 'sidebar-open' : 'sidebar-compact'}`}>
-      <Sidebar activeNav={activeNav} isOpen={isSidebarOpen} onToggle={onToggleSidebar} onChangeNav={onChangeNav} onNotice={onNotice} />
+      <Sidebar activeNav={activeNav} isOpen={isSidebarOpen} onToggle={onToggleSidebar} onChangeNav={onChangeNav} onNotice={onNotice} user={user} onLogout={onLogout} />
       <main className="workspace">
         <Topbar activeNav={activeNav} onChangeNav={onChangeNav} onNotice={onNotice} />
         {children}
