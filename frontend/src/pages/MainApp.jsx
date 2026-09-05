@@ -76,7 +76,16 @@ function MainApp() {
       {sessionError && <section className="content"><p className="text-red-400 font-[var(--mono)] text-sm">{sessionError}</p></section>}
       {!sessionError && activeNav === 'Dashboard' && <DashboardContent setActiveNav={setActiveNav} notice={notice} user={user} profile={profile?.prediction_profile} latestPrediction={latestPrediction} />}
       {!sessionError && activeNav === 'Prediction' && <PredictionPage setActiveNav={setActiveNav} profile={predictionProfile} />}
-      {!sessionError && activeNav === 'Profile' && <ProfilePage profile={profile} onProfileSaved={setProfile} />}
+      {!sessionError && activeNav === 'Profile' && (
+        <ProfilePage
+          profile={profile}
+          onProfileSaved={(saved) => {
+            setProfile(saved)
+            setPredictionProfile(saved)
+          }}
+          setActiveNav={setActiveNav}
+        />
+      )}
       {!sessionError && activeNav === 'Roadmap' && <RoadmapPage />}
       {!PAGES.includes(activeNav) && (
         <section className="content flex items-center justify-center min-h-[50vh]">

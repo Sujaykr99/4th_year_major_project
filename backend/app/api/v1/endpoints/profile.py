@@ -1,6 +1,6 @@
 """Profile endpoints."""
 from datetime import datetime
-from typing import Any, List
+from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from motor.motor_asyncio import AsyncIOMotorDatabase
@@ -10,7 +10,6 @@ from app.models.schemas import (
     ProfileResponse,
     ProfileUpdate,
     StudentProfile,
-    UserResponse,
     calculate_profile_completion,
 )
 from app.core import security
@@ -18,7 +17,7 @@ from app.core import security
 router = APIRouter()
 
 
-def _save_profile_with_completion(
+async def _save_profile_with_completion(
     profile_dict: dict, current_user_id: str, db: AsyncIOMotorDatabase, is_new: bool = False
 ) -> dict:
     """Helper to calculate completion and save profile."""
@@ -31,12 +30,16 @@ def _save_profile_with_completion(
     if is_new:
         profile_dict["user_id"] = current_user_id
         profile_dict["created_at"] = datetime.utcnow()
-        result = db.profiles.insert_one(profile_dict)
+        result = await db.profiles.insert_one(profile_dict)
         profile_dict["id"] = str(result.inserted_id)
     else:
-        db.profiles.update_one(
+        await db.profiles.update_one(
             {"user_id": current_user_id}, {"$set": profile_dict}
         )
+        # After update, fetch the updated document to get _id
+        updated = await db.profiles.find_one({"user_id": current_user_id})
+        if updated:
+            profile_dict["_id"] = updated["_id"]
         profile_dict["id"] = str(profile_dict["_id"])
 
     profile_dict["user_id"] = str(profile_dict["user_id"])
@@ -80,7 +83,7 @@ async def update_profile(
     merged_profile = {**existing_profile, **update_data}
 
     # Calculate completion and save
-    saved_profile = _save_profile_with_completion(merged_profile, current_user_id, db)
+    saved_profile = await _save_profile_with_completion(merged_profile, current_user_id, db)
 
     return ProfileResponse(**saved_profile)
 
@@ -105,7 +108,7 @@ async def create_profile(
     profile_dict = profile_in.model_dump()
 
     # Calculate completion and save
-    saved_profile = _save_profile_with_completion(profile_dict, current_user_id, db, is_new=True)
+    saved_profile = await _save_profile_with_completion(profile_dict, current_user_id, db, is_new=True)
 
     return ProfileResponse(**saved_profile)
 

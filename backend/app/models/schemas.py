@@ -124,10 +124,10 @@ class Experience(BaseModel):
     skills_used: List[str] = []
 
 
-# Required fields for profile completion (core fields needed for prediction)
+# Required fields for profile completion (must match frontend ProfilePage form field names)
 REQUIRED_PROFILE_FIELDS = [
     "cgpa",
-    "university_tier",
+    "college_tier",          # form uses college_tier (not university_tier)
     "graduation_year",
     "programming_skills",
     "framework_skills",

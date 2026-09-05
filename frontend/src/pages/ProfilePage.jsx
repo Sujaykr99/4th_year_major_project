@@ -36,7 +36,7 @@ function Field({ label, children }) {
 const inputCls = "bg-[#07120a] border border-[var(--border)] text-[var(--text)] p-2.5 text-sm focus:border-[var(--green)] outline-none font-[var(--mono)] w-full"
 const selectCls = inputCls
 
-function ProfilePage({ profile, onProfileSaved }) {
+function ProfilePage({ profile, onProfileSaved, setActiveNav }) {
   const [form, setForm] = useState(normalizeProfile(profile?.prediction_profile))
   const [saved, setSaved] = useState(false)
   const [error, setError] = useState('')
@@ -50,12 +50,31 @@ function ProfilePage({ profile, onProfileSaved }) {
     setError('')
     const payload = { cgpa: form.cgpa, graduation_year: form.graduation_year, prediction_profile: form }
     try {
-      const savedProfile = profile ? await api.updateProfile(payload) : await api.createProfile(payload)
+      let savedProfile
+      if (profile) {
+        // Profile exists in app state → update
+        savedProfile = await api.updateProfile(payload)
+      } else {
+        // Try create; if server says already exists → update instead
+        try {
+          savedProfile = await api.createProfile(payload)
+        } catch (e) {
+          const msg = e?.message || ''
+          if (msg.includes('already exists') || msg.includes('400')) {
+            savedProfile = await api.updateProfile(payload)
+          } else {
+            throw e
+          }
+        }
+      }
       onProfileSaved(savedProfile)
       setSaved(true)
-      setTimeout(() => setSaved(false), 2000)
-    } catch {
-      setError('Profile could not be saved. Please try again.')
+      // Redirect to Prediction page after 1.5s
+      setTimeout(() => {
+        setActiveNav('Prediction')
+      }, 1500)
+    } catch (e) {
+      setError(e?.message || 'Profile could not be saved. Please try again.')
     }
   }
 
@@ -156,10 +175,15 @@ function ProfilePage({ profile, onProfileSaved }) {
         </article>
 
         {/* SAVE */}
-        <div className="flex justify-end">
+        <div className="flex justify-end items-center gap-4">
           {error && <p className="mr-auto text-red-400 text-xs font-[var(--mono)]">{error}</p>}
-          <button className="primary-action px-10" onClick={handleSave}>
-            {saved ? '✓ PROFILE SAVED' : 'SAVE PROFILE DATA →'}
+          {saved && (
+            <p className="text-[var(--green)] text-xs font-[var(--mono)] animate-pulse">
+              ✓ Profile saved — redirecting to Prediction...
+            </p>
+          )}
+          <button className="primary-action px-10" onClick={handleSave} disabled={saved}>
+            {saved ? '✓ SAVED' : 'SAVE PROFILE DATA →'}
           </button>
         </div>
       </div>

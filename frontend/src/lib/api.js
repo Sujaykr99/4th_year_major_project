@@ -16,13 +16,31 @@ async function post(path, body) {
     headers: authHeaders(),
     body: JSON.stringify(body),
   })
-  if (!res.ok) throw new Error(await res.text())
+  if (!res.ok) {
+    const text = await res.text()
+    try {
+      const data = JSON.parse(text)
+      throw new Error(data.detail || data.message || text)
+    } catch (e) {
+      if (e.message !== text) throw e // rethrow if not JSON parse error
+      throw new Error(text)
+    }
+  }
   return res.json()
 }
 
 async function get(path) {
   const res = await fetch(`${BASE_URL}${path}`, { headers: authHeaders() })
-  if (!res.ok) throw new Error(await res.text())
+  if (!res.ok) {
+    const text = await res.text()
+    try {
+      const data = JSON.parse(text)
+      throw new Error(data.detail || data.message || text)
+    } catch (e) {
+      if (e.message !== text) throw e
+      throw new Error(text)
+    }
+  }
   return res.json()
 }
 

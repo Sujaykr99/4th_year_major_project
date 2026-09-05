@@ -42,12 +42,12 @@ async def _check_profile_completion(current_user_id: str, db: AsyncIOMotorDataba
             detail="Profile incomplete. Please fill in required fields in your profile before running prediction."
         )
 
-    # Check if profile is 100% complete
+    # Check if profile has minimum required fields filled
     completion = profile_dict.get("profile_completion", 0)
-    if completion < 100:
+    if completion < 60:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Profile is only {completion}% complete. Please complete all required fields before running prediction."
+            detail=f"Profile is only {completion}% complete. Please fill in at least CGPA, Skills, Projects, Internships and Graduation Year."
         )
 
     profile_dict["id"] = str(profile_dict["_id"])
@@ -63,7 +63,8 @@ def _profile_to_prediction_input(profile_dict: dict) -> PredictionInput:
     # Required fields
     input_data = {
         "cgpa": pred_profile.get("cgpa", 7.0),
-        "university_tier": pred_profile.get("university_tier", 2),
+        # college_tier from form maps to university_tier in PredictionInput
+        "university_tier": pred_profile.get("university_tier") or pred_profile.get("college_tier", 2),
         "graduation_year": pred_profile.get("graduation_year", 2026),
         "programming_skills": pred_profile.get("programming_skills", []),
         "framework_skills": pred_profile.get("framework_skills", []),
@@ -96,7 +97,7 @@ def _profile_to_prediction_input(profile_dict: dict) -> PredictionInput:
     return PredictionInput(**input_data)
 
 
-@router.post("/predict/career", response_model=PredictionResult)
+@router.post("/career", response_model=PredictionResult)
 async def predict_career(
     input_data: PredictionInput,
     current_user_id: str = Depends(security.get_current_user_id),
@@ -121,19 +122,33 @@ async def predict_career(
     prediction_result = unified_ml_service.predict_career(input_dict)
 
     # Save prediction to database
+    # Build top_predictions from role_probabilities
+    role_probs = prediction_result.get("role_probabilities", {})
+    top_predictions = [
+        CareerPrediction(role=role, probability=prob, confidence_level="high" if prob > 0.7 else "medium" if prob > 0.4 else "low")
+        for role, prob in sorted(role_probs.items(), key=lambda x: x[1], reverse=True)
+    ]
+
+    # If no role_probabilities, create a single entry with the predicted role
+    if not top_predictions and prediction_result.get("role"):
+        top_predictions = [
+            CareerPrediction(
+                role=prediction_result["role"],
+                probability=prediction_result.get("role_confidence", 0.0),
+                confidence_level="high" if prediction_result.get("role_confidence", 0) > 0.7 else "medium" if prediction_result.get("role_confidence", 0) > 0.4 else "low"
+            )
+        ]
+
     prediction_in_db = PredictionInDB(
         user_id=current_user_id,
         input_data=input_data,
-        **{
-            k: v
-            for k, v in prediction_result.items()
-            if k in [
-                "sector", "role", "sector_confidence", "role_confidence",
-                "confidence", "confidence_level",
-                "top_predictions", "placement_readiness_score",
-                "skill_gaps", "readiness_level", "readiness_breakdown"
-            ]
-        },
+        predicted_role=prediction_result.get("role", "Unknown"),
+        confidence=prediction_result.get("role_confidence", 0.0),
+        confidence_level="high" if prediction_result.get("role_confidence", 0) > 0.7 else "medium" if prediction_result.get("role_confidence", 0) > 0.4 else "low",
+        top_predictions=top_predictions,
+        placement_readiness_score=prediction_result.get("placement_readiness_score", 0.0),
+        skill_gaps=prediction_result.get("skill_gaps", {}),
+        shap_explanation=None,
     )
 
     result = await db.predictions.insert_one(prediction_in_db.model_dump(by_alias=True))
@@ -142,16 +157,16 @@ async def predict_career(
     # Return prediction result (adapt hierarchical result to PredictionResult schema)
     return PredictionResult(
         predicted_role=prediction_result.get("role", "Unknown"),
-        confidence=prediction_result.get("role_confidence", prediction_result.get("confidence", 0.0)),
-        confidence_level=prediction_result.get("confidence_level", "low"),
-        top_predictions=prediction_result.get("top_predictions", []),
+        confidence=prediction_result.get("role_confidence", 0.0),
+        confidence_level="high" if prediction_result.get("role_confidence", 0) > 0.7 else "medium" if prediction_result.get("role_confidence", 0) > 0.4 else "low",
+        top_predictions=top_predictions,
         placement_readiness_score=prediction_result.get("placement_readiness_score", 0.0),
         skill_gaps=prediction_result.get("skill_gaps", {}),
         shap_explanation=None,  # Not available for hierarchical model yet
     )
 
 
-@router.post("/predict/placement")
+@router.post("/placement")
 async def predict_placement(
     input_data: PredictionInput,
     current_user_id: str = Depends(security.get_current_user_id),
@@ -193,7 +208,7 @@ async def predict_placement(
     return prediction_result
 
 
-@router.post("/predict/both")
+@router.post("/both")
 async def predict_both(
     input_data: PredictionInput,
     current_user_id: str = Depends(security.get_current_user_id),
@@ -216,19 +231,35 @@ async def predict_both(
 
     # Save career prediction
     career_result = result["career_prediction"]
+
+    # Convert hierarchical model output to match PredictionInDB schema
+    # Build top_predictions from role_probabilities
+    role_probs = career_result.get("role_probabilities", {})
+    top_predictions = [
+        CareerPrediction(role=role, probability=prob, confidence_level="high" if prob > 0.7 else "medium" if prob > 0.4 else "low")
+        for role, prob in sorted(role_probs.items(), key=lambda x: x[1], reverse=True)
+    ]
+
+    # If no role_probabilities, create a single entry with the predicted role
+    if not top_predictions and career_result.get("role"):
+        top_predictions = [
+            CareerPrediction(
+                role=career_result["role"],
+                probability=career_result.get("role_confidence", 0.0),
+                confidence_level="high" if career_result.get("role_confidence", 0) > 0.7 else "medium" if career_result.get("role_confidence", 0) > 0.4 else "low"
+            )
+        ]
+
     prediction_in_db = PredictionInDB(
         user_id=current_user_id,
         input_data=input_data,
-        **{
-            k: v
-            for k, v in career_result.items()
-            if k in [
-                "sector", "role", "sector_confidence", "role_confidence",
-                "confidence", "confidence_level",
-                "top_predictions", "placement_readiness_score",
-                "skill_gaps", "readiness_level", "readiness_breakdown"
-            ]
-        },
+        predicted_role=career_result.get("role", "Unknown"),
+        confidence=career_result.get("role_confidence", 0.0),
+        confidence_level="high" if career_result.get("role_confidence", 0) > 0.7 else "medium" if career_result.get("role_confidence", 0) > 0.4 else "low",
+        top_predictions=top_predictions,
+        placement_readiness_score=career_result.get("placement_readiness_score", 0.0),
+        skill_gaps=career_result.get("skill_gaps", {}),
+        shap_explanation=None,
     )
     await db.predictions.insert_one(prediction_in_db.model_dump(by_alias=True))
 
@@ -300,7 +331,7 @@ async def get_placement_history(
     return predictions
 
 
-@router.post("/predict/career/auto", response_model=PredictionResult)
+@router.post("/career/auto", response_model=PredictionResult)
 async def predict_career_auto(
     current_user_id: str = Depends(security.get_current_user_id),
     db: AsyncIOMotorDatabase = Depends(get_database),
@@ -326,19 +357,33 @@ async def predict_career_auto(
     prediction_result = unified_ml_service.predict_career(input_dict)
 
     # Save prediction to database
+    # Build top_predictions from role_probabilities
+    role_probs = prediction_result.get("role_probabilities", {})
+    top_predictions = [
+        CareerPrediction(role=role, probability=prob, confidence_level="high" if prob > 0.7 else "medium" if prob > 0.4 else "low")
+        for role, prob in sorted(role_probs.items(), key=lambda x: x[1], reverse=True)
+    ]
+
+    # If no role_probabilities, create a single entry with the predicted role
+    if not top_predictions and prediction_result.get("role"):
+        top_predictions = [
+            CareerPrediction(
+                role=prediction_result["role"],
+                probability=prediction_result.get("role_confidence", 0.0),
+                confidence_level="high" if prediction_result.get("role_confidence", 0) > 0.7 else "medium" if prediction_result.get("role_confidence", 0) > 0.4 else "low"
+            )
+        ]
+
     prediction_in_db = PredictionInDB(
         user_id=current_user_id,
         input_data=input_data,
-        **{
-            k: v
-            for k, v in prediction_result.items()
-            if k in [
-                "sector", "role", "sector_confidence", "role_confidence",
-                "confidence", "confidence_level",
-                "top_predictions", "placement_readiness_score",
-                "skill_gaps", "readiness_level", "readiness_breakdown"
-            ]
-        },
+        predicted_role=prediction_result.get("role", "Unknown"),
+        confidence=prediction_result.get("role_confidence", 0.0),
+        confidence_level="high" if prediction_result.get("role_confidence", 0) > 0.7 else "medium" if prediction_result.get("role_confidence", 0) > 0.4 else "low",
+        top_predictions=top_predictions,
+        placement_readiness_score=prediction_result.get("placement_readiness_score", 0.0),
+        skill_gaps=prediction_result.get("skill_gaps", {}),
+        shap_explanation=None,
     )
 
     result = await db.predictions.insert_one(prediction_in_db.model_dump(by_alias=True))
@@ -347,16 +392,16 @@ async def predict_career_auto(
     # Return prediction result
     return PredictionResult(
         predicted_role=prediction_result.get("role", "Unknown"),
-        confidence=prediction_result.get("role_confidence", prediction_result.get("confidence", 0.0)),
-        confidence_level=prediction_result.get("confidence_level", "low"),
-        top_predictions=prediction_result.get("top_predictions", []),
+        confidence=prediction_result.get("role_confidence", 0.0),
+        confidence_level="high" if prediction_result.get("role_confidence", 0) > 0.7 else "medium" if prediction_result.get("role_confidence", 0) > 0.4 else "low",
+        top_predictions=top_predictions,
         placement_readiness_score=prediction_result.get("placement_readiness_score", 0.0),
         skill_gaps=prediction_result.get("skill_gaps", {}),
         shap_explanation=None,
     )
 
 
-@router.post("/predict/both/auto")
+@router.post("/both/auto")
 async def predict_both_auto(
     current_user_id: str = Depends(security.get_current_user_id),
     db: AsyncIOMotorDatabase = Depends(get_database),
@@ -384,16 +429,12 @@ async def predict_both_auto(
     prediction_in_db = PredictionInDB(
         user_id=current_user_id,
         input_data=input_data,
-        **{
-            k: v
-            for k, v in career_result.items()
-            if k in [
-                "sector", "role", "sector_confidence", "role_confidence",
-                "confidence", "confidence_level",
-                "top_predictions", "placement_readiness_score",
-                "skill_gaps", "readiness_level", "readiness_breakdown"
-            ]
-        },
+        predicted_role=career_result.get("role", "Unknown"),
+        confidence=career_result.get("role_confidence", career_result.get("confidence", 0.0)),
+        confidence_level=career_result.get("confidence_level", "low"),
+        top_predictions=career_result.get("top_predictions", []),
+        placement_readiness_score=career_result.get("placement_readiness_score", 0.0),
+        skill_gaps=career_result.get("skill_gaps", {}),
     )
     await db.predictions.insert_one(prediction_in_db.model_dump(by_alias=True))
 
@@ -408,7 +449,7 @@ async def predict_both_auto(
     return result
 
 
-@router.get("/predict/latest", response_model=PredictionResult)
+@router.get("/latest", response_model=PredictionResult)
 async def get_latest_prediction(
     current_user_id: str = Depends(security.get_current_user_id),
     db: AsyncIOMotorDatabase = Depends(get_database),

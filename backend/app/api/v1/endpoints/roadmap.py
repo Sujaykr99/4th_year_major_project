@@ -20,7 +20,7 @@ router = APIRouter()
 
 
 @router.post("/generate", response_model=Roadmap)
-async def generate_roadmap(
+async def generate_roadmap_endpoint(
     request: RoadmapGenerateRequest,
     current_user_id: str = Depends(security.get_current_user_id),
     db: AsyncIOMotorDatabase = Depends(get_database),
@@ -29,12 +29,12 @@ async def generate_roadmap(
     Generate a personalized learning roadmap for a target role.
     """
     # Call the actual roadmap generator service
-    from app.services.roadmap_generator import generate_roadmap
+    from app.services.roadmap_generator import generate_roadmap as generate_roadmap_service
 
     # We use a default list of current skills for now, until the profile endpoint connects it
     current_skills = ["Python", "HTML", "CSS"]
 
-    generated_data = generate_roadmap(
+    generated_data = generate_roadmap_service(
         target_role=request.target_role,
         current_skills=current_skills,
         time_commitment_hours_per_week=10,
